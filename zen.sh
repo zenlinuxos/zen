@@ -1,5 +1,5 @@
 #!/bin/bash
-########### LASTVERSION! 2020-12-01
+########### LASTVERSION! 2020-12-27
     ################################################################################
     ######## THESE ARE GENERAL INFORMATION and DIRECTIONs for zen-style-library ####
     ###!!!## https://github.com/dylanaraps/pure-sh-bible
@@ -31,6 +31,7 @@
     #########
     ################################################################################
 
+function dldeb () { zendeb.sh "$@" ; }
 
     ####   # https://unix.stackexchange.com/questions/129084/
     ####   in-bash-how-can-i-echo-the-variable-name-not-the-variable-value
@@ -78,9 +79,10 @@ fi
 # ex.: wait 3  "birazdan formatlanacak, bekleyin" veya wait 1
 function wait () {
 local nSec="$1"
-local sMsg="$2-'please wait..'"
+local sMsg="${2:-"please wait.."}"
  echo -e "\\033[0;32m ${sMsg} \\033[0m" ; sleep "${nSec}"
 }
+
 
 # UNIQUE-RANDOM String generator..  https://man7.org/linux/man-pages/man1/uuidgen.1.html
 function random () { echo "$( uuidgen )" ; }
@@ -1073,7 +1075,7 @@ array_from_text "aSTRINGLIST" "${psSTRINGLIST}"  #  arr_test "aSTRINGLIST"
  RETURN "${RV}">/dev/null
 }
 
- 
+
 
 ### Bir Karakter treninden , string listten, vagonlari, wordlari, karakterleri ayiklar
 ###### sServer='{"status":"ok","data":{"server":"srv-store1"}}'
@@ -1091,28 +1093,28 @@ function str_remove_these() {
   echo "${psSentence}"
 }
 
-# Search and Replace FIRST text piece 
+# Search and Replace FIRST text piece
 # ex.:   str_replace "sTHIS" "$sSeekThis"  "$sReplaceWith"       returns nThEl_isFOUND
 function str_replace () {
 REGFUNC="str_replace"; RV=0
 local -n psSTRINGLIST="$1"
 local psCONTENT="${2}"
 local psOTHERCONTENT="${3}"
- 
- psSTRINGLIST="$( echo "${psSTRINGLIST/$psCONTENT/$psOTHERCONTENT}" )"   
+
+ psSTRINGLIST="$( echo "${psSTRINGLIST/$psCONTENT/$psOTHERCONTENT}" )"
  RV="${psSTRINGLIST}"
  RETURN "${RV}">/dev/null
 }
 
 
-	# To replace all occurrences, use ${parameter//pattern/string}:
+    # To replace all occurrences, use ${parameter//pattern/string}:
     # 'The secret code is 12345' prints 'The secret code is XXXXX'
-# ex.:   str_replace_num2x 'The secret code is 12345'  "X"  
+# ex.:   str_replace_num2x 'The secret code is 12345'  "X"
 function str_replace_num2x () {
 REGFUNC="str_replace_num2x"; RV=
 local -n psSTRINGLIST="$1"
-local psCHAR="${2}" 
-  
+local psCHAR="${2}"
+
  psSTRINGLIST="$( echo "${psSTRINGLIST//[0-9]/$psCHAR}"  )"
  RV="${psSTRINGLIST}"
  RETURN "${RV}">/dev/null
@@ -1388,8 +1390,13 @@ RV=""
 
     case "${psWhat}" in
         "path"| "dir")
-                    sPath=$( echo "$(dirname ${psFile})")
+                    sPath="$(dirname ${psFile})"
                     if [[ "${sPath}" == "." ]] ; then sPath="${PWD}"; fi
+                    RV="${sPath}";;   # /home/zen
+        "basepath")
+                    sPath="$(dirname ${psFile})"
+                    if [[ "${sPath}" == "." ]] ; then sPath="${PWD}"; fi
+                    sPath="$(echo $(basename ${sPath}) | cut -d'.' -f1)"
                     RV="${sPath}";;   # /home/zen
         "name")
                 RV="$(basename ${psFile})" ;;  # deneme.txt
@@ -1456,7 +1463,7 @@ RV=""
         *)  echo "USAGE ${2})" ;;  #
     esac
  echo "${RV}" 2>/dev/null
- RETURN "${RV}"
+ RETURN "${RV}">/dev/null
 }
 
 function isnot_empty_file { if is_empty_file "$1" ; then return 1; else return 0; fi ;  }
@@ -1812,6 +1819,23 @@ function exist_file () {
  return 1
 }
 
+     # sadece islenecek dosya degil, tarif edilen klasor de yoksa once path'i yaratir sonra file'i
+function XXXsafe_file () {
+ local psf_ExistOrNot="$1"
+ local sPathOf
+
+ if isnot_exist_file "${psf_ExistOrNot}"
+   then
+      FILE "${psf_ExistOrNot}" "PATH" ; sPathOf="$RETURN"
+      if okay "$psf_ExistOrNot not exist. Because sPathOf:[$sPathOf] not exist.. Create it ?"
+        then
+            if safe_mkdir "${sPathOf}"
+              then touch "${psf_ExistOrNot}"
+              else return 1
+            fi
+      fi
+  fi
+}
 
 function is_exist_dir ()  { if [ -d "$1" ] && [[ -n $1 ]]; then return 0; else return 1; fi ;}
 function isnot_exist_dir ()  { if [ -d "$1" ] && [[ -n $1 ]]; then return 1; else return 0; fi ;}
@@ -1947,7 +1971,7 @@ function RETURN () {
     else                            #   RETURN "Bekir"
          RETURN="$1" ; echo "${RETURN}">"$sfRETURN"
     fi
- echo "${RETURN}" 2>/dev/null
+ echo "${RETURN}">/dev/null
 } # xReturned="$(RETURN)" veya xReturned="${RETURN}" veya xReturned="$(cat /tmp/RETURN )"
 
 
@@ -2194,8 +2218,8 @@ function REPLY() {
 
  # ex.:  aDiskler=( "sda1" "sda2" "sda3" "sda4" "cdrom" "sdb1" "sdb2" "sdb3")
 # ex.:   MENU_Array  "aDiskler" "== Baglanacak diski secin == " +- "live"
-function menu_array() { MENU_Array "$@" ; menu_array="${MENU_Array}" ; echo "${menu_array}" ; }
-function MENU_Array () {
+function XXXmenu_array() { MENU_Array "$@" ; menu_array="${MENU_Array}" ; echo "${menu_array}" ; }
+function XXXMENU_Array () {
  local -n a_Menu="$1"
  local psTitle_myARRAY_MENU="${2:-"[0] <- EXIT MENU"}"
  local psOPTIONAL="${3:-"static"}"      # OR "live" FOR eNumarated Array
@@ -2234,7 +2258,58 @@ function MENU_Array () {
 } #xRV="${RETURN}"
 
 
+#ex.:  aDiskler=( "sda1" "sda2" "sda3" "sda4" "cdrom" "sdb1" "sdb2" "sdb3")
+#ex.:   MENU_Array  "aDiskler" "== Baglanacak diski secin == " +- "live"
+function menu_array() { MENU_Array "$@" ; echo "${RETURN}" ; }
+function MENU_Array () {
+ local -n a_Menu="$1"
+ local psTitle_myARRAY_MENU="${2:-"[0] <- EXIT MENU"}"
+ local psOPTIONAL="${3:-"static"}"      # OR "live" FOR eNumarated Array
 
+ local n_LenA="${#a_Menu[@]}"
+ if [[ "${n_LenA}" = "0" ]] ; then
+    echo "An Error encountered. No menu array exist.. Returning <null>"
+    RV="null"
+ else
+    local strSELECTED=""
+    #Dizinin icerigini degistirmeden, sadece basitce 0'dan degil de 1'den baslatarak ekranda goster
+    arr_shownum "a_Menu" "$psTitle_myARRAY_MENU"
+
+    echoc "READ" "[0] <- EXIT MENU ->Choose an option:"
+    read -n1 REPLY
+
+    if [ "${REPLY}" -eq 0 ] ; then
+        RV="exit" ;  RETURN "${RV}">/dev/null
+        return 0
+    fi
+
+    if [ "${REPLY}" -gt "${n_LenA}" ] ; then
+        RV="null" ;  RETURN "${RV}">/dev/null
+        return 0
+    fi
+        if [ "${REPLY}" -le "${n_LenA}" ]; then
+        let "REPLY=REPLY-1"
+        strSELECTED="${a_Menu[${REPLY}]}"
+                    #             wait 5 "strSELECTED:$strSELECTED"
+        sRemThis="\[${REPLY}\] "
+        RV="$( echo "${strSELECTED}" | sed "s/$sRemThis//g" )"
+
+        if [[ "${psOPTIONAL}" == "live" ]] ; then
+            unset "a_Menu[${REPLY}]" # remove the undesired item
+            a_Menu=( "${a_Menu[@]}" ) # renumber the indexes
+            ## https://stackoverflow.com/questions/25436988/
+            ##     how-to-remove-an-element-from-a-bash-array-without-flattening-the-array
+        fi
+
+        let "REPLY=REPLY+1"    # Geri eski-orijinal haline getirelim
+
+    fi
+
+
+ fi
+
+ RETURN "${RV}">/dev/null  # SON YAPILAN SECIMIN ICERIGINI $RETURN e RAPTIYELESIN !
+} #xRV="${RETURN}"
 
 #################################################################
 ################### ARRAY() and other functions for Arrays ######
@@ -2352,12 +2427,9 @@ function get_mount_point() {
             fi
         fi
     done
- echo "${RV}" 2>/dev/null
+ echo "${RV}">/dev/null
  RETURN "${RV}"
 }
-
-
-
 
 function array_from_file () {
 local -n aArrayName="${1}"
@@ -2406,7 +2478,8 @@ local psSOURCE="${2}"
 # ex:    array_from_ini "array2" "${sFileMEM}"  "*" | "[=]" | "[*]" | "[m_SECT]"
 function array_from_ini () {
   local -n psArrayTO="$1"
-  local pTextFile="$2" psFilterBySECT="$3"
+  local pTextFile="$2"
+  local psFilterBySECT="$3"
   local array aMEM aAllLines aRegs aSection
 
     # Gelen 2 parametre SECTION parametresini, fonksiyon sounda  PATTERN olarak kullanarak
@@ -3093,7 +3166,7 @@ local psCONTENT="${2}"
     ## ex: code "$HOME/Projects/deneme.py" YA DA code "fstab"
 # ex.: codeit "sh" "~/Desktop/runme"
 ################# v.3 ##### 08.10.2020
-function codeit() {
+function code() {
 #################
 psWith_File_or_Alias="${1:-"${PWD}/readme-first.txt"}"
     # Hicbir parametre, yani Dosya ismi girilmemisse default..
@@ -3719,7 +3792,7 @@ function safe_mount()
     local psOPT_MountPoint="$2"
     local nPara="$#" n=0 nArr nLenArr strLineOf strDEVICE="" strFSTYPE="" strMOUNTPOINT=""
             ## Her defasinda root yetkisi istemesin.. diye aslinda $ZEN/ klasoru altina yazmali
-    local sPartitionsINFO="/tmp/MountPartitions.arr"
+    local sPartitionsINFO="$ZEN/MountPartitions.arr"
 
     if is_exist_file "${sPartitionsINFO}"
       then array_from_file "aPartitionsINFO" "${sPartitionsINFO}"
@@ -3738,9 +3811,9 @@ function safe_mount()
             do
                 strDEVICE="$( echo "${aPartitionsINFO[$nArr]}" | awk '{print $1}')"     # /dev/mmcblk0p1
 
-                            wait 1 "${strDEVICE}  # TAMAM, swap yada root degil , /proc/mounts icinde esamesi okunuyorsa alalim :"
+                # wait 1 "${strDEVICE}  # TAMAM, swap yada root degil , /proc/mounts icinde esamesi okunuyorsa alalim :"
                 get_mount_point "${strDEVICE}" ; MOUNTPOINT="$RETURN"
-                wait 1 "sandvic mi? MOUNTPOINT= $RETURN"
+                # wait 1 "sandvic mi? MOUNTPOINT= $RETURN"
 
                 if [ "${MOUNTPOINT}" ]  #  baglama noktasi BOS DEGILse
                   then  continue        #  already mounted to  $MOUNTPOINT "
@@ -3818,7 +3891,7 @@ function zen_generate_memfile () {
                 # satirindaki 3. kolondaki bilgiyi once bir DiZiye cevirip,
       array_from_text "aElemFSTAB" "$sSelLine"    # /etc/fstab dosyasina yarasir bir dizi ismi
          sSelPart="${aElemFSTAB[2]}"    #  dizinin 2.elemani ->"/media/suse/windows"
- 
+
       #==================== ======================
        e2f "${ZENMEM_FILE}" "${sSelMP}=${sSelPart}"
       #==================== ======================
@@ -3836,16 +3909,16 @@ function zen_generate_memfile () {
     BROWSER="localbrowser"
     MDTEXTEDITOR="retext"
     MDREMEDITOR="remarkable"
- 
+
     TMP="\${TMP:-/dev/shm}"
     #### Asagidaki ilk 4 ( Dort ) satir, user-space in temelini olusturacak
     WINHOME="\${WIN}/home"
-    WINUSER="\${WINDOWS}/Users/Public" 
-    
+    WINUSER="\${WINDOWS}/Users/Public"
+
     ZENHOUSE="\${HOUSE}/zen"          ##  ZEN_YOLU Ayri mount edilmis /HOME-HOUSE icindeki ZEN deposu
-    ZENHOME="\${HOME}/zen"        
+    ZENHOME="/home/zen"
     ZEN="${ZENHOUSE}"         ## !! previously export-ed ZEN  veya simply $HOME/zen
-    ZENMEMFILE="\${ZEN}/zen.mem"    #MEMFILE="${HOME}/${idMEMFILE}"
+    ZENMEMFILE="~/zen.mem"    #MEMFILE="${HOME}/${idMEMFILE}"
     ZENMEMDIR="\${ZEN}/mem"         #MEMDIR="${HOME}/${idMEMDIR}"
 
     ZENOS="\${ZEN}/os"
@@ -3864,18 +3937,18 @@ function zen_generate_memfile () {
     MYISO="\${HOUSE}/iso"
     MYDL="\${HOUSE}/dl"
     MYTRASH="\${HOUSE}/trash"
-    
+
     MYDEB="\${ZENSERVER}/deb"
     MYWEB="\${ZENSERVER}/web"
     MYMAIL="\${MYWEB}/mail"
     MYFTP="\${MYWEB}/ftp"
     MYPKG="\${MYWEB}/pkg"
     MYWWW="\${MYWEB}/www"
-    
+
     WINWWW="\${WIN}/server/web/www"
 
-    PENHOUSE="/media/${USER}/penhouse"
-    PENHOME="/media/${USER}/penhome"
+    PENHOUSE="/media/${USER}/USB4HOUSE"
+    PENHOME="/media/${USER}/USB2WIN"
 
     #### Asagidaki ilk 4 ( Dort ) satir, user-space in temelini olusturacak
     e2f "${ZENMEM_FILE}" "WINHOME=\${WIN}/home"
@@ -3884,7 +3957,7 @@ function zen_generate_memfile () {
     e2f "${ZENMEM_FILE}" "ZENHOME=${ZENHOME}"
     e2f "${ZENMEM_FILE}" "ZEN=${ZEN}"
     e2f "${ZENMEM_FILE}" "ZENMEMFILE=${ZENMEMFILE}"
-    e2f "${ZENMEM_FILE}" "ZENMEMDIR=${ZENMEMDIR}" 
+    e2f "${ZENMEM_FILE}" "ZENMEMDIR=${ZENMEMDIR}"
     e2f "${ZENMEM_FILE}" "TMP=${TMP}"
     e2f "${ZENMEM_FILE}" "MYISO=${MYISO}"
     e2f "${ZENMEM_FILE}" "MYDL=${MYDL}"
@@ -4015,6 +4088,15 @@ function safe_path () {
 }
 
 
+function INFOEXPORT() {
+local psWHICH="${1,,}"      # .INI dosya icinden istenen keyVAL alinacak
+export -p>"/tmp/INFOEXPORT.TEXT"
+array_from_file "aINFOEXPORT" "/tmp/INFOEXPORT.TEXT"
+arr_replace_all "aINFOEXPORT" "XDG" "FUCKKKKK"
+arr_show "aINFOEXPORT" "replace_all"
+    # RV=arr_seek() falan filan
+ RETURN "${RV}">/dev/null
+}
 
 #############################
 function zen_generate_info ()
@@ -4069,7 +4151,7 @@ function zen_generate_info ()
                 s1Percent="$( char_replicate "#" ${n1Percent} )"
                 s2Percent="$( char_replicate "_" ${n2Percent} )"
                 sPercentil="${s1Percent}${s2Percent}"
-                local strLine="[$n] ${sPercentil} ${strPATH}  ${strFSTYPE}  ${strSIZE}  ${strFSUSED}  ${strFSAVAIL}  ${strFSUSEPERCENT}"
+                local strLine="[$n] ${sPercentil} ${strPATH} ${strMOUNTPOINT} ${strFSTYPE}  ${strSIZE}  ${strFSUSED}  ${strFSAVAIL}  ${strFSUSEPERCENT}"
                 e2f "${sDisksINFO}" "${strLine}"
 
             fi
@@ -4093,7 +4175,7 @@ function zen_gen_PATH() {
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 function zen_generate_bashrc ()
 {
-local ps_bashrc="${1:-"${ZEN}/.bashrc.zen"}"
+local ps_bashrc="${1:-"${HOME}/.bashrc"}"
 if isnot_exist_file "${ps_bashrc}" ; then
          echoc "NOTE" "Generatin ${ps_bashrc}.."
 
@@ -4113,7 +4195,7 @@ if isnot_exist_file "${ps_bashrc}" ; then
   e2f "${ps_bashrc}" "    # dont put duplicate lines or lines starting with space in the history."
   e2f "${ps_bashrc}" "HISTCONTROL=ignoreboth   # append to the history file, don't overwrite it"
   e2f "${ps_bashrc}" "shopt -s histappend"
-  e2f "${ps_bashrc}" "shopt -s histverify    # calling history line via '!n' + ENTER, results edit-command instead of execute.  "	
+  e2f "${ps_bashrc}" "shopt -s histverify    # calling history line via '!n' + ENTER, results edit-command instead of execute.  "
   e2f "${ps_bashrc}" "HISTSIZE=1000"
   e2f "${ps_bashrc}" "HISTFILESIZE=2000"
   e2f "${ps_bashrc}" ""
@@ -4139,7 +4221,7 @@ function zen_change_bashrc ()
 {
 local psfBASHRC="${1:-"${HOME}/.bashrc"}"
 local strLastLine="$( file_cat_lastline "${psfBASHRC}" )"
-local strAppend="source ${ZEN}/zen.sh    #--- >%" 
+local strAppend="source ~/zen.sh    #--- >%"
 
     ## .bashrc hic yoksa bir tane sablon olusturalim
     if is_exist_file "${psfBASHRC}" ; then
@@ -4171,8 +4253,8 @@ local strAppend="source ${ZEN}/zen.sh    #--- >%"
           e2f "${psfBASHRC}"   "PATH=$PATH:$ZEN"
           e2f "${psfBASHRC}"   "export PATH"
 
-          e2f "${psfBASHRC}" "alias a='source $HOME/.bash_aliases'"
-          e2f "${psfBASHRC}" "alias za='source ${ZEN}/.bash_aliases.zen'" 
+          e2f "${psfBASHRC}" "alias a='source ~/.bash_aliases'"
+          e2f "${psfBASHRC}" "alias za='source ~/zen.alias'"
           e2f "${psfBASHRC}" "${strAppend}"
         fi
     fi
@@ -4181,11 +4263,11 @@ local strAppend="source ${ZEN}/zen.sh    #--- >%"
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 function zen_change_bash_aliases ()
 {
- local psf_bash_aliases_zen="${1:-"${ZEN}/.bash_aliases.zen"}"
+ local psf_bash_aliases_zen="${1:-"$HOME/zen.alias"}"
 
     if isnot_exist_file "${psf_bash_aliases_zen}" ; then
             echoc "NOTE" "Generating ${psf_bash_aliases_zen}.."
-      e2f "${psf_bash_aliases_zen}" "[[ -f \${ZEN}/zen.mem ]] &&  source \${ZEN}/zen.mem || echo  \"zen.mem NOT FOUND!!\" "
+      e2f "${psf_bash_aliases_zen}" "[[ -f ~/zen.mem ]] &&  source ~/zen.mem || echo  \"~/zen.mem NOT FOUND!!\" "
       e2f "${psf_bash_aliases_zen}" "#######################"
       e2f "${psf_bash_aliases_zen}" "# Some alias to avoid mistakes:"
       e2f "${psf_bash_aliases_zen}" "alias rm='rm -i'"
@@ -4202,7 +4284,7 @@ function zen_change_bash_aliases ()
       e2f "${psf_bash_aliases_zen}" "alias ll.='ls --color=auto -l -A -F \"\$@\"'"
       e2f "${psf_bash_aliases_zen}" "alias la='ls -d .* --color=auto'    ## Show hidden files ##"
       e2f "${psf_bash_aliases_zen}" "alias dir='ls -S --classify'"
-      e2f "${psf_bash_aliases_zen}" "alias ,='cd ..'" 
+      e2f "${psf_bash_aliases_zen}" "alias ,='cd ..'"
       e2f "${psf_bash_aliases_zen}" "alias c='clear'"
       e2f "${psf_bash_aliases_zen}" "alias d='df -h | grep /dev/ | sort'"
       e2f "${psf_bash_aliases_zen}" "alias h='history'"
@@ -4216,48 +4298,50 @@ function zen_change_bash_aliases ()
       e2f "${psf_bash_aliases_zen}" "alias xuser='chown -R -v \$USER:\$USER \"\$@\"'"
       e2f "${psf_bash_aliases_zen}" "alias xzen='chown -R -v zen:zen \"\$@\"'"
       e2f "${psf_bash_aliases_zen}" "alias myip='curl ipinfo.io/ip'"
-      
-      e2f "${psf_bash_aliases_zen}" "alias house='cd \$HOUSE'"
-      e2f "${psf_bash_aliases_zen}" "alias zen='cd \$ZEN'"
-      e2f "${psf_bash_aliases_zen}" "alias zenhouse='cd \$ZENHOUSE'"
-      
-      e2f "${psf_bash_aliases_zen}" "alias win='cd \$WIN'"
-      e2f "${psf_bash_aliases_zen}" "alias windows='cd \$WINDOWS'"
-      e2f "${psf_bash_aliases_zen}" "alias winhome='cd \$WINHOME'"
-      e2f "${psf_bash_aliases_zen}" "alias winwww='cd \$WINWWW'"
+
+      e2f "${psf_bash_aliases_zen}" "alias house='cd \$HOUSE; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias zen='cd \$ZEN; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias zenhouse='cd \$ZENHOUSE; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias penhome='cd \$PENHOME; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias penhouse='cd \$PENHOUSE; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias penzen='cd \$PENHOUSE/zen; ls -l'"
+
+      e2f "${psf_bash_aliases_zen}" "alias zen='cd \$ZEN; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias win='cd \$WIN; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias windows='cd \$WINDOWS; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias winhome='cd \$WINHOME; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias winwww='cd \$WINWWW; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias winuser='cd \$WINUSER ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zenuser='cd \$ZENUSER ; ls -l'"
-      e2f "${psf_bash_aliases_zen}" "alias zenapp='cd \$ZENAPP'"
-      e2f "${psf_bash_aliases_zen}" "alias zenserver='cd \$ZENSERVER'"
+      e2f "${psf_bash_aliases_zen}" "alias zenapp='cd \$ZENAPP; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias zenserver='cd \$ZENSERVER; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zenos='cd \$ZENOS ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zenrun='cd \$ZENRUN ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zencode='cd \$ZENCODE ; ls *.sh'"
-      e2f "${psf_bash_aliases_zen}" "alias zenmedia='cd \$ZENMEDIA'"
-      e2f "${psf_bash_aliases_zen}" "alias zentemp='cd \$ZENTEMP'"
-      e2f "${psf_bash_aliases_zen}" "alias mytrash='cd \$MYTRASH'"
+      e2f "${psf_bash_aliases_zen}" "alias zenmedia='cd \$ZENMEDIA; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias zentemp='cd \$ZENTEMP; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias mytrash='cd \$MYTRASH; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias myiso='cd \$MYISO ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias mydl='cd \$MYDL ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias mywww='cd \$MYWWW; ls *.html'"
       e2f "${psf_bash_aliases_zen}" "alias mydeb='cd \$MYDEB ; ls -l *.deb'"
       e2f "${psf_bash_aliases_zen}" "alias mypkg='cd \$MYPKG ; ls -l *.deb'"
-      e2f "${psf_bash_aliases_zen}" "alias penhome='cd \$PENHOME'"
-      e2f "${psf_bash_aliases_zen}" "alias penhouse='cd \$PENHOUSE'"
       e2f "${psf_bash_aliases_zen}" ""
       e2f "${psf_bash_aliases_zen}" "# Standart system wide navigation"
       e2f "${psf_bash_aliases_zen}" "alias gotmp='cd /tmp'"
       e2f "${psf_bash_aliases_zen}" "alias goboot='cd /boot'"
-      e2f "${psf_bash_aliases_zen}" "alias goconfig='cd \${HOME}/.config'"
-      e2f "${psf_bash_aliases_zen}" "alias golocal='cd \${HOME}/.local'"
-      e2f "${psf_bash_aliases_zen}" "alias goshare='cd \${HOME}/.local/share'"
+      e2f "${psf_bash_aliases_zen}" "alias goconfig='cd ~/.config'"
+      e2f "${psf_bash_aliases_zen}" "alias golocal='cd ~/.local'"
+      e2f "${psf_bash_aliases_zen}" "alias goshare='cd ~/.local/share'"
       e2f "${psf_bash_aliases_zen}" "alias goboot='cd /boot/grub'"
       e2f "${psf_bash_aliases_zen}" "alias gomedia='cd /run/media/\$USER ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias goetc='cd /etc'"
       e2f "${psf_bash_aliases_zen}" "alias gowww='cd /var/www/html/'"
       e2f "${psf_bash_aliases_zen}" "alias gopkg='cd /var/cache/apt/archives'"
-      e2f "${psf_bash_aliases_zen}" "alias gotemp='cd \${HOME}/Templates/ ; ls -l'"
-      e2f "${psf_bash_aliases_zen}" "alias godesk='cd \${HOME}/Desktop/ ; ls -l'"
-      e2f "${psf_bash_aliases_zen}" "alias godoc='cd \${HOME}/Documents/ ; ls -l'"
-      e2f "${psf_bash_aliases_zen}" "alias godl='cd \${HOME}/Downloads/ ; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias gotemp='cd ~/Templates/ ; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias godesk='cd ~/Desktop/ ; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias godoc='cd ~/Documents/ ; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias godl='cd ~Downloads/ ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "############################################## PYTHONs"
       e2f "${psf_bash_aliases_zen}" "alias pyve='python3 -m venv ./venv'"
       e2f "${psf_bash_aliases_zen}" "alias pyva='source ./venv/bin/activate'"
@@ -4267,16 +4351,15 @@ function zen_change_bash_aliases ()
       e2f "${psf_bash_aliases_zen}" "alias pywebmd='/usr/bin/remarkable \"http://localhost:666/os/index.md\"'"
       e2f "${psf_bash_aliases_zen}" "alias pyeric='eric6_webbrowser \"http://localhost:666/os/index.html\"'"
       e2f "${psf_bash_aliases_zen}" "alias md='echo \"Creating Folder(s).. \" ; mkdir -p \"\$@\"'"
-      e2f "${psf_bash_aliases_zen}" "alias mnt='mount |column -t | grep \"\$@\"'"
-      e2f "${psf_bash_aliases_zen}" "alias mntls='mount | grep \"\$@\"'"
+      e2f "${psf_bash_aliases_zen}" "alias mnt='mount |column -t | grep ^/dev/'"
       e2f "${psf_bash_aliases_zen}" "alias unmedia='sudo umount /media/\$USER/*'"
-      e2f "${psf_bash_aliases_zen}" "alias za='source ${ZEN}/.bash_aliases.zen'"
-      e2f "${psf_bash_aliases_zen}" "alias zazen='source ${ZEN}/zen.sh ; source ${ZEN}/.bash_aliases.zen'"
+      e2f "${psf_bash_aliases_zen}" "alias za='source ~/zen.alias'"
+      e2f "${psf_bash_aliases_zen}" "alias zazen='source ~/zen.sh ; source ~/zen.alias'"
     fi
 
         # Kullanici sisteminde .bash_aliases dosyasi hic yoksa bizim olusturdugumuzu dafault yapalim
-    if isnot_exist_file "${HOME}/.bash_aliases"; then
-        safe_cp "${psf_bash_aliases_zen}" "$HOME/.bash_aliases"
+    if isnot_exist_file "~/.bash_aliases"; then
+        safe_cp "${psf_bash_aliases_zen}" "~/.bash_aliases"
     fi
 
 }
@@ -4311,31 +4394,33 @@ function zen_change_bash_aliases ()
 
 ######################## function zen_source ()########################{
 
-##### ZENPATH simply must be "$HOUSE/zen" or "$HOME/zen" 
-		# run-time current dir that zen.sh in .. simdilik bir kenarda dursun, yanginda kullanilmak uzere
-ZENPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"	
-		# Eger sistemde $HOUSE daha tanimlanmamissa zen.sh in claistirildigi yer vatan bilinsin
+##### ZENPATH simply must be "$HOUSE/zen" or "$HOME/zen"
+        # run-time current dir that zen.sh in .. simdilik bir kenarda dursun, yanginda kullanilmak uzere
+ZENPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        # Eger sistemde $HOUSE daha tanimlanmamissa zen.sh in claistirildigi yer vatan bilinsin
 HOUSE="${1:-"${ZENPATH}"}"
-		# zen.sh cagrilirken disaridan parametre olarak hangi cografyada calisacagi bildirilmemisse, yukardaki gibi karar verilecek
+        # zen.sh cagrilirken disaridan parametre olarak hangi cografyada calisacagi bildirilmemisse, yukardaki gibi karar verilecek
 
-		# Butun bu hazirliklari bunun icin yapmistik, baslayalim.. 
-		# Bakalim zenHOUSE neresi olacak ve ZENMEMFILE nereden SOURCE edilecek ?? :: 
-		# Sistem enviromentinde halihazirda $ZEN path'i tanimlanmis ve EXPORT edilmis bile olsa ISE YARAMAYACAK!!
-		# Ancak .bashrc icinde tanimlanip export edilirse, konsol oturumu boyunca aktif olacaktir.
-		# O yuzden, eger zen.sh parametre olarak ZENPATH gecilmemisse, $HOME icinde zen.mem varsa, basitce hatmedecegiz..
-		# Ama tanimlandigi yerde yaratilmamissa, tekvin'i biz baslatacagiz..  
-	if test -z "$ZEN" ; then
-		if is_exist_file "${HOME}/zen/zen.mem"
-			#=============================			
-			 then ZEN="${HOME}/zen"    
-			 else ZEN="${HOUSE}/zen"              ###mkdir -p "${ZEN}"
-				echoc  "ALERT" "New initialized & exported HOUSE ZEN->${ZEN}"
-			 
-		fi   
-	fi
-   ZENMEM_FILE="${ZEN}/zen.mem" 
-   
-   # Bu andan itibaren artik zen.sh'in cagrilacagi ZEN yolu ve zen.mem'imiz olan MEMFILE kesin olarak belirlendi.. 
+        # Butun bu hazirliklari bunun icin yapmistik, baslayalim..
+        # Bakalim zenHOUSE neresi olacak ve ZENMEMFILE nereden SOURCE edilecek ?? ::
+        # Sistem enviromentinde halihazirda $ZEN path'i tanimlanmis ve EXPORT edilmis bile olsa ISE YARAMAYACAK!!
+        # Ancak .bashrc icinde tanimlanip export edilirse, konsol oturumu boyunca aktif olacaktir.
+        # O yuzden, eger zen.sh parametre olarak ZENPATH gecilmemisse, $HOME icinde zen.mem varsa, basitce hatmedecegiz..
+        # Ama tanimlandigi yerde yaratilmamissa, tekvin'i biz baslatacagiz..
+
+        if is_exist_file "${HOME}/zen.mem"
+            #=============================
+             then ZEN="${HOME}"
+             else ZEN="${HOUSE}/zen"              ###
+                safe_mkdir "${ZEN}"
+                echoc  "ALERT" "New initialized & exported HOUSE ZEN->${ZEN}"
+
+        fi
+
+        #!# ZENMEM_FILE="${ZEN}/zen.mem"
+        ZENMEM_FILE="${HOME}/zen.mem"
+
+   # Bu andan itibaren artik zen.sh'in cagrilacagi ZEN yolu ve zen.mem'imiz olan MEMFILE kesin olarak belirlendi..
 ### Lets continue ..
     #===========================
     if is_exist_file "${ZENMEM_FILE}"
@@ -4350,7 +4435,7 @@ HOUSE="${1:-"${ZENPATH}"}"
         #echo "----------------------------"
         safe_cat "${ZENMEM_FILE}"
         echoc "EXIT" "#Just created [${ZENMEM_FILE}] # Exiting.. See you later.. "
-        echo "'zen'-Installation not finished yet. You should kill tmp/kill.me..  after editing ${ZENMEM_FILE} by hand..">"${ZEN}/kill.me"
+        echo "'zen'-Install not finished yet. You should kill.me after editing ${ZENMEM_FILE} by hand..">"${ZEN}/kill.me"
         SHUTDOWN "Please carefully edit by hand and re-run $0 again! "
     fi
     #==================== BU SATIRDAN SONRA ARTIK HER DURUMDA BIR zen.mem DOSYAMIZ VAR!! . bakalim kurulumun devami icin
