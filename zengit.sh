@@ -34,7 +34,7 @@ function git_fetch_pull_all_subfolders() {
 ################
 
 
-function git_mem_check()
+function source_git_mem()
 {
      local PROJECT_FOLDER="$(basename "${PWD}")"
      echo "PROJECT_FOLDER::$PROJECT_FOLDER"
@@ -47,21 +47,24 @@ function git_mem_check()
         echoc  "ALERT" "Creating ${GITMEM_FILE} .."
         #.......................................
         GIT_USER="zenlinuxos"
-        GIT_MAIL="zenlinuxos@gmail.com"       # GIT_PASSWORD == zlo2023zorba
+        GIT_MAIL="zenlinuxos@gmail.com"       #
+        GIT_PASSWORD="zlo2023zorba"
         GIT_PROJECT="http://github.com/${GIT_USER}/${PROJECT_FOLDER}"
         GIT_HUBFILE="http://github.com/${GIT_USER}/${PROJECT_FOLDER}.git"
                       #GIT_HUBFILE="http://github.com/zenlinuxos/zen.git"
         #.......................................
         e2f "${GITMEM_FILE}" "PROJECT_FOLDER=${PROJECT_FOLDER}"
         e2f "${GITMEM_FILE}" "GIT_USER=${GIT_USER}"
+        e2f "${GITMEM_FILE}" "GIT_PASSWORD=${GIT_PASSWORD}"
         e2f "${GITMEM_FILE}" "GIT_MAIL=${GIT_MAIL}"
         e2f "${GITMEM_FILE}" "GIT_PROJECT=${GIT_PROJECT}"
         e2f "${GITMEM_FILE}" "GIT_HUBFILE=${GIT_HUBFILE}"
     fi
+ source "${GITMEM_FILE}"
 }
 
-# ex.: git_ekle  "dosya.sh"  "Deneme Amacli Dosya eklendi"
-function git_ekle()
+# ex.: git_add  "dosya.sh"  "Deneme Amacli Dosya eklendi"
+function git_add()
 {
     psFILE="${1:-"README.md"}"
     psCOMMENT="${2:-"Updated ${sDate}"}"
@@ -85,8 +88,15 @@ function git_ekle()
         fi
 
         if okay "wanna send to cloud?"; then
-            echo "Pulling"
-            git pull    # git push
+                    ###echo "Pulling"
+                    ##git pull https://username:password@git_hostname.com/my/repository
+                    # git pull https://zenlinuxos:zlo2023zorba@github.com/zenlinuxos/zen
+
+            echo "Pushing"
+            git push https://${GIT_USER}:${GIT_PASSWORD}@github.com/${GIT_USER}/${PROJECT_FOLDER}
+
+
+
         fi
     else
         echoc "ALERT" "Dosya ismi belirtmemissiniz.."
@@ -94,12 +104,23 @@ function git_ekle()
     fi
 }
 
+function git_init() {
+    git config --global user.name "${GIT_USER}"
+    git config --global user.email "${GIT_MAIL}"
+    git init
+}
+
+function git_clone() {
+    echoc "INFO" "..  Cloning ${sGitHubProject} into ${GIT_PROJECT} .."
+    git clone "${sGitHubProject}"
+}
+
+
 ####### ex.:
 clear #############################
         # https://training.github.com/downloads/tr/github-git-cheat-sheet/
-git_mem_check
-source "${GITMEM_FILE}"
 
+source_git_mem
     sDate="$(date +"%A, %B %-d, %Y")"
     psFILE="${1:-"README.md"}"
     psCOMMENT="${2:-"Updated ${sDate}"}"
@@ -122,16 +143,10 @@ NPARAM="$#"
          sAction="${REPLY}"
          case "${sAction}" in
             "1") safe_cat "${GITMEM_FILE}" ;;
-            "2") git config --global user.name "${GIT_USER}"
-                git config --global user.email "${GIT_MAIL}"
-                git init                                        # "${PROJECT_FOLDER}"
-                ;;
+            "2") git_init   ;;             # "${PROJECT_FOLDER}"
             "3") echo "${sAction}" ;;
-            "4") git clone "${sGitHubProject}" ;;
-            "5")    # Add
-                echo "${sAction}"
-                git_ekle "${psFILE}" "${psCOMMENT}"
-                ;;
+            "4") git_clone "${sGitHubProject}" ;;
+            "5") git_add "${psFILE}" "${psCOMMENT}" ;;
             "6") git remote add githubDepo "${GIT_HUBFILE}" ;;
             "7") echo "${sAction}" ;;
             "0") echoc "EXIT" "Menüden çıkıldı.. " ; break
@@ -140,7 +155,3 @@ NPARAM="$#"
 
     done
 #fi
-
-
-
-git_ekle "$@"
