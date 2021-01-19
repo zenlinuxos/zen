@@ -1,5 +1,5 @@
 #!/bin/bash
-###########  source lib_from_zen.sh
+###########  source ~/zen.sh
 
 #ex.: if is_zero "$nSizeOfFile"   ; then "This file is EMPTY"
 function is_zero ()   { [[ "${1}" == "0" ]] && return 0  ;}
