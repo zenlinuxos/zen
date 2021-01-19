@@ -1,7 +1,7 @@
 #!/bin/bash
-###########  source ~/zen.sh
+########### part of source ~/zen.sh
 
-#ex.: if is_zero "$nSizeOfFile"   ; then "This file is EMPTY"
+#ex.: if is_zero "$nSizeOfFile" ; then "This file is EMPTY"
 function is_zero ()   { [[ "${1}" == "0" ]] && return 0  ;}
 function isnot_zero (){ [[ "${1}" == "0" ]] && return 1  ;}
 
