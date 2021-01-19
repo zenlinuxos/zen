@@ -10,7 +10,6 @@ function is()
 { psWHAT=${1} ; psOP=${2} ; psVAL=${3}
 
     if is_null "${psWHAT}" ; then return 1 ; fi
-    #if [ ${psWHAT} == "0" ] ; then return 1 ; fi
 
     case "${psOP}" in
         ">"  | "g")         [[ ${psWHAT} -gt ${psVAL} ]] && return 0   ;;
