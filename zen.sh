@@ -1,5 +1,5 @@
 #!/bin/bash
-########### LASTVERSION! 2020-12-27
+########### LASTVERSION!  2021/01/20 11:16:15
     ################################################################################
     ######## THESE ARE GENERAL INFORMATION and DIRECTIONs for zen-style-library ####
     ###!!!## https://github.com/dylanaraps/pure-sh-bible
@@ -2174,6 +2174,13 @@ psFileOut="${3:-"${psFile}.out"}"
 }
 
 
+# ex.:   REPLY "Seçiminiz:" ;   nSecilen="${REPLY}"
+function REPLY() {
+    local sMenu="${1:-"[0] <- EXiT  -> Choose:"}"
+    echo -e -n "\\033[0;1m${sMenu}\\033[0m"
+    read -n1 REPLY
+}
+
 # ex.:
  #num="$(StrMENU "OK Cancel Ignore")"
  #if is_null "$num"
@@ -2209,12 +2216,14 @@ function StrMENU() {
  RETURN "${RV}"
 }
 
-# ex.:   REPLY "Seçiminiz:" ;   nSecilen="${REPLY}"
-function REPLY() {
-    local sMenu="${1:-"[0] <- EXiT  -> Choose:"}"
-    echo -e -n "\\033[0;1m${sMenu}\\033[0m"
-    read -n1 REPLY
+# lastx 14.01.2021 Yukaridakini iptal et..
+#  ex.:    menu_str  "OK" "Cancel" "Ignore"
+function menu_str() {
+  local array_menu=("$@")
+  MENU_Array "array_menu" ; RV="${RETURN}" ; echo "${RV}" 2>/dev/null
+ RETURN "${RV}"
 }
+
 
  # ex.:  aDiskler=( "sda1" "sda2" "sda3" "sda4" "cdrom" "sdb1" "sdb2" "sdb3")
 # ex.:   MENU_Array  "aDiskler" "== Baglanacak diski secin == " +- "live"
@@ -2267,30 +2276,35 @@ function MENU_Array () {
  local psOPTIONAL="${3:-"static"}"      # OR "live" FOR eNumarated Array
 
  local n_LenA="${#a_Menu[@]}"
- if [[ "${n_LenA}" = "0" ]] ; then
+
+ if is_zero "${n_LenA}"  ; then
     echo "An Error encountered. No menu array exist.. Returning <null>"
-    RV="null"
- else
+    RV="null" ;  RETURN "${RV}">/dev/null
+    return 0
+ fi
+
     local strSELECTED=""
     #Dizinin icerigini degistirmeden, sadece basitce 0'dan degil de 1'den baslatarak ekranda goster
     arr_shownum "a_Menu" "$psTitle_myARRAY_MENU"
 
-    echoc "READ" "[0] <- EXIT MENU ->Choose an option:"
-    read -n1 REPLY
+    ### echoc "READ" "[0] <- EXIT MENU ->Choose an option:"
+    echoc "READ" "  -> Choose an option:"
+    read -s -n1 REPLY
 
-    if [ "${REPLY}" -eq 0 ] ; then
-        RV="exit" ;  RETURN "${RV}">/dev/null
+    if [[ "${REPLY}" = "$'\e'" ]] ; then
+        RV="exit" ; echoc "ALERT" "ESSCAPEDDDD" ; sleep 3 ; RETURN "${RV}">/dev/null
         return 0
     fi
 
-    if [ "${REPLY}" -gt "${n_LenA}" ] ; then
+    if is_zero "${REPLY}" || is "${REPLY}" ">" "${n_LenA}" ; then
         RV="null" ;  RETURN "${RV}">/dev/null
         return 0
     fi
-        if [ "${REPLY}" -le "${n_LenA}" ]; then
+
+    if [ "${REPLY}" -le "${n_LenA}" ]; then
         let "REPLY=REPLY-1"
         strSELECTED="${a_Menu[${REPLY}]}"
-                    #             wait 5 "strSELECTED:$strSELECTED"
+                #             wait 5 "strSELECTED:$strSELECTED"
         sRemThis="\[${REPLY}\] "
         RV="$( echo "${strSELECTED}" | sed "s/$sRemThis//g" )"
 
@@ -2306,7 +2320,6 @@ function MENU_Array () {
     fi
 
 
- fi
 
  RETURN "${RV}">/dev/null  # SON YAPILAN SECIMIN ICERIGINI $RETURN e RAPTIYELESIN !
 } #xRV="${RETURN}"
@@ -3215,9 +3228,8 @@ sTemplate="# -*- coding: utf-8 -*-"
 
     "sh")
 sTemplate='#!/bin/bash
-[[ -f ~/zen/zen.sh ]] && source ~/zen/zen.sh || source "${ZEN}/zen.sh"
-[[ -f ~/zen/zen.mem ]] && source ~/zen/zen.mem || source "${ZEN}/zen.mem"
-##################### zen_source
+source ~/zen.sh ; source ~/zen.mem
+#####################
 
 # FUNCTION:
 ### EX: funcy "p1"..
@@ -3247,7 +3259,7 @@ import sys
 sTemplate="
 @echoes OFF
 echo *****************************************************
-echo %~dp0\php.exe -S localhost:666 -t /
+echo %~dp0\php.exe -S localhost:666 -t /$PWD
 echo *****************************************************
 "
         ;;
@@ -4317,7 +4329,7 @@ function zen_change_bash_aliases ()
       e2f "${psf_bash_aliases_zen}" "alias zenserver='cd \$ZENSERVER; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zenos='cd \$ZENOS ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zenrun='cd \$ZENRUN ; ls -l'"
-      e2f "${psf_bash_aliases_zen}" "alias zencode='cd \$ZENCODE ; ls *.sh'"
+      e2f "${psf_bash_aliases_zen}" "alias zencodesh='cd \$ZENCODE ; ls *.sh'"
       e2f "${psf_bash_aliases_zen}" "alias zenmedia='cd \$ZENMEDIA; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias zentemp='cd \$ZENTEMP; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias mytrash='cd \$MYTRASH; ls -l'"
@@ -4342,6 +4354,9 @@ function zen_change_bash_aliases ()
       e2f "${psf_bash_aliases_zen}" "alias godesk='cd ~/Desktop/ ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias godoc='cd ~/Documents/ ; ls -l'"
       e2f "${psf_bash_aliases_zen}" "alias godl='cd ~Downloads/ ; ls -l'"
+      e2f "${psf_bash_aliases_zen}" "alias zencode='$ZEN/zencode.sh \"\$@\"'"
+      e2f "${psf_bash_aliases_zen}" "alias zenweb='$ZEN/zenweb.sh \"\$@\"'"
+      e2f "${psf_bash_aliases_zen}" "alias zendeb='$ZEN/zendeb.sh \"\$@\"'"
       e2f "${psf_bash_aliases_zen}" "############################################## PYTHONs"
       e2f "${psf_bash_aliases_zen}" "alias pyve='python3 -m venv ./venv'"
       e2f "${psf_bash_aliases_zen}" "alias pyva='source ./venv/bin/activate'"
