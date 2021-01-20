@@ -75,28 +75,26 @@ function git_add()
         return 0
     fi
 
+source "${GITMEM_FILE}"
 
     if is_exist_file "${psFILE}"; then
+          echo ".... Status and Fetching in PROJECT_FOLDER=${PROJECT_FOLDER}"
           git status
-          echo "Fetching"
           git fetch
 
-        if okay "wanna send to cloud?"; then
-            echo "Adding and Comitting "
+        if okay "Add and Commit?  ${psFILE} ${psCOMMENT}"; then
+            echo "... Adding and Comitting "
             git add "${psFILE}"
             git commit -m "${psCOMMENT}"
         fi
 
-        if okay "wanna send to cloud?"; then
-                    ###echo "Pulling"
+        if okay "wanna send to cloud? - https://${GIT_USER}:${GIT_PASSWORD}@github.com/${GIT_USER}/${PROJECT_FOLDER}"
+        then
                     ##git pull https://username:password@git_hostname.com/my/repository
                     # git pull https://zenlinuxos:zlo2023zorba@github.com/zenlinuxos/zen
-
-            echo "Pushing"
+             ###echo "Pulling"
+            echo "... Pushing  https://${GIT_USER}:${GIT_PASSWORD}@github.com/${GIT_USER}/${PROJECT_FOLDER}"
             git push https://${GIT_USER}:${GIT_PASSWORD}@github.com/${GIT_USER}/${PROJECT_FOLDER}
-
-
-
         fi
     else
         echoc "ALERT" "Dosya ismi belirtmemissiniz.."
@@ -132,7 +130,7 @@ NPARAM="$#"
              "Git- Config & Init" \
              "Git- Create" \
              "Git Clone" \
-             "Add $psFILE " \
+             "Add $psFILE ${psCOMMENT}"  \
              "Git - remote add githubDepo" \
              "Commit"  )
 
