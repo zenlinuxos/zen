@@ -19,16 +19,19 @@ EOF
 return 0
 }
 
-is_valid_php_server () {
+is_valid_php_server ()
+{
+
+  echoc "PASS" ".. Validating server in $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ) .. "
   which php &> /dev/null
   if [[ $? -eq 1 ]]; then
-    echo "Error: PHP not found. Please install PHP version 5.4 or greater!"
+    echoc "ERROR" "----> Error: PHP not found. Please install PHP version 5.4 or greater!"
     return 1
   fi
 
   php -h | grep -q -- '-S'
   if [[ $? -eq 1 ]]; then
-    echoc "ERROR" "Error: PHP version must be 5.4 or greater!"
+    echoc "ERROR" "----> Error:  PHP version must be 5.4 or greater!"
     return 1
   fi
 
@@ -68,7 +71,7 @@ function is_exist_pidfile() {
     echoc "PASS" "Server seems to be running!"
     echoc "BOLD" "if not, there is probably a zombie $PIDFILE"
     echoc "INFO" "if you are sure no server is running just remove  manually and start again"
-    return 0
+        return 0
   else
     echoc "ALERT" "..creating $PIDFILE"
     return 1
@@ -77,23 +80,25 @@ function is_exist_pidfile() {
 }
 
 start_php_server () {
-  echoc "PASS" ".. Start server in $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )  .. Validating .. "
-  is_valid_php_server
-  if [[ $? -eq 1 ]]; then
+
+  if ! is_valid_php_server; then
     return 1
   fi
 
   if is_exist_pidfile; then
-       return 1
-  else
-        echoc "U" "https://www.php.net/manual/en/features.commandline.webserver.php "
-        echoc "ALERT" "so PHP applications will stall if a request is blocked."
-        echoc "B" "$NAME gonna start on  ${WEBROOT}"
-        echo "https://${HOST}:${PORT}"
-        php -S "$HOST":"$PORT" -t "${WEBROOT}" >> "$LOGFILE" 2>&1 &
-        echo "$HOST":"$PORT":$! > $PIDFILE
-        return 0
+        if okay "Wanna kill this PID and continue to fire up server?" ; then
+            rm -f "${PIDFILE}"
+        fi
   fi
+
+    echoc "U" "https://www.php.net/manual/en/features.commandline.webserver.php "
+    echoc "ALERT" "so PHP applications will stall if a request is blocked."
+    echoc "B" "$NAME gonna start on  ${WEBROOT}"
+    echo "https://${HOST}:${PORT}"
+    php -S "$HOST":"$PORT" -t "${WEBROOT}" >> "$LOGFILE" 2>&1 &
+    echo "$HOST":"$PORT":$! > $PIDFILE
+    return 0
+
 }
 
 start_python_server () {
@@ -171,10 +176,12 @@ log_server() {
 #### ex.: zenweb php|python|python3  start|stop|status|log  666 /var/www
 ###
 clear #################################### zenweb "python3" "start" "666" "${WINWWW}"
-pSERVANT="${1,,}"            # lowercase command parameter
-pACTION="${2,,}"            # lowercase command parameter
+
+function MAIN() {
+pSERVANT="${1:-"PHP"}" ; pSERVANT="${pSERVANT,,}"            # lowercase command parameter
+pACTION="${2:-"START"}" ; pACTION="${pACTION,,}"            # lowercase command parameter
 PORT="${3:-"8080"}"         # default port number
-WEBROOT="$4"            #  ALIAS win|lin|default ? for pre-defined web broadcasting folder/PATH
+WEBROOT="${4:-"${PWD}"}"            #  ALIAS win|lin|default ? for pre-defined web broadcasting folder/PATH
 
 # script name
 NAME="${0##*/}"
@@ -229,6 +236,9 @@ if [ "${pSERVANT}" = "python3" ]; then
     esac
 fi
 
+}
+
+MAIN "$@"
 
 # python3 -m venv ./venv
 # source ./venv/bin/activate'
